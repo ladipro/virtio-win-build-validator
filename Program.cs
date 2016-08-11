@@ -98,6 +98,9 @@ namespace BuildValidator
                 newDir = args[1];
             }
 
+            oldDir = Path.GetFullPath(oldDir);
+            newDir = Path.GetFullPath(newDir);
+
             DiffProcessor processor = new DiffProcessor(oldDir, newDir, excludedSpecs);
             HashSet<string> processedOldFiles = processor.Process();
 
