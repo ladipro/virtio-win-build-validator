@@ -44,7 +44,10 @@ namespace BuildValidator
                     else if (line.StartsWith("    "))
                     {
                         module = line.Trim().ToUpper();
-                        importDict[module] = new List<string>();
+                        if (!importDict.ContainsKey(module))
+                        {
+                            importDict[module] = new List<string>();
+                        }
                     }
                 }
             }
