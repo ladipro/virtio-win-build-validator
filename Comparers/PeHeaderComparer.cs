@@ -11,7 +11,8 @@ namespace BuildValidator
         {
             var cmd1 = new NullSource()
                 .Pipe(new Command(Tools.Dumpbin, "/HEADERS", infile))
-                .Pipe(new Command(Tools.Sed, "-n", "\"" + @"/machine/p;/characteristics/p;/subsystem/p;/size of image/p" + "\""))
+                .Pipe(new Command(Tools.Sed, "-n", "\"" + @"/machine/p;/characteristics/p;/subsystem/p;/size of image/p;" +
+                                                          @"s/^.*entry point (.*) \(.*\)$/entry point \1/p" + "\""))
                 .Pipe(new FileSink(outfile));
             await cmd1.Run();
 
