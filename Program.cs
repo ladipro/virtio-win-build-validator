@@ -41,11 +41,15 @@ namespace BuildValidator
         static void Main(string[] args)
         {
             const string excludePrefix = "/exclude:";
+            bool haveExclude = (args.Length > 0 && args[0].StartsWith(excludePrefix));
 
-            if (args.Length < 2 || args.Length > 3 ||
-                (args.Length == 3 && !args[0].StartsWith(excludePrefix)))
+            int dirArgsLength = args.Length - (haveExclude ? 1 : 0);
+            if (dirArgsLength < 1 || dirArgsLength > 2)
             {
-                Console.WriteLine("Usage: BuildValidator [/exclude:filespec1;filespec2;...] <old_dir> <new_dir>");
+                Console.WriteLine("Usage: BuildValidator [/exclude:filespec1;filespec2;...] [<old_dir>] <new_dir>");
+                Console.WriteLine();
+                Console.WriteLine("       If both <old_dir> and <new_dir> are specified the tool diffs the two.");
+                Console.WriteLine("       If only <new_dir> is specified the tool dumps its contents.");
                 return;
             }
 
@@ -54,7 +58,7 @@ namespace BuildValidator
                 Console.WriteLine("Error: Sed tool not found in '{0}'", Tools.Sed);
                 return;
             }
-            if (!File.Exists(Tools.Diff))
+            if (dirArgsLength == 2 && !File.Exists(Tools.Diff))
             {
                 Console.WriteLine("Error: Diff tool not found in '{0}'", Tools.Diff);
                 return;
@@ -76,10 +80,8 @@ namespace BuildValidator
             }
 
             List<Regex> excludedSpecs = new List<Regex>();
-            string oldDir;
-            string newDir;
 
-            if (args.Length == 3)
+            if (haveExclude)
             {
                 foreach (string spec in args[0].Substring(excludePrefix.Length).Split(',', ';'))
                 {
@@ -89,22 +91,27 @@ namespace BuildValidator
                         .Replace("?", ".") + '$', RegexOptions.IgnoreCase);
                     excludedSpecs.Add(mask);
                 }
-                oldDir = args[1];
-                newDir = args[2];
             }
-            else
+
+            if (dirArgsLength == 2)
             {
-                oldDir = args[0];
-                newDir = args[1];
+                // diff mode
+                string oldDir = Path.GetFullPath(args[haveExclude ? 1 : 0]);
+                string newDir = Path.GetFullPath(args[haveExclude ? 2 : 1]);
+
+                DiffProcessor processor = new DiffProcessor(oldDir, newDir, excludedSpecs);
+                HashSet<string> processedOldFiles = processor.Process();
+
+                ProcessOrphanedOldFiles(excludedSpecs, oldDir, processedOldFiles);
             }
+            else if (dirArgsLength == 1)
+            {
+                // dump mode
+                string dir = Path.GetFullPath(args[haveExclude ? 1 : 0]);
 
-            oldDir = Path.GetFullPath(oldDir);
-            newDir = Path.GetFullPath(newDir);
-
-            DiffProcessor processor = new DiffProcessor(oldDir, newDir, excludedSpecs);
-            HashSet<string> processedOldFiles = processor.Process();
-
-            ProcessOrphanedOldFiles(excludedSpecs, oldDir, processedOldFiles);
+                DumpProcessor processor = new DumpProcessor(dir, excludedSpecs);
+                processor.Process();
+            }
         }
     }
 }

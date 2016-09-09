@@ -35,5 +35,32 @@ namespace BuildValidator
 
             return diff.ToString();
         }
+
+        public async override Task<string> Dump(string fi)
+        {
+            StringBuilder dump = new StringBuilder();
+
+            // invoke PE header comparer
+            string dumpHeader = await peHeaderComparer.Dump(fi);
+            if (!String.IsNullOrWhiteSpace(dumpHeader))
+            {
+                dump.AppendLine("PE Header dump");
+                dump.Append(dumpHeader);
+            }
+
+            // invoke resource comparer and combine the dumps
+            if (!String.IsNullOrWhiteSpace(Tools.Resedit))
+            {
+                string dumpResources = await resourceComparer.Dump(fi);
+                if (!String.IsNullOrWhiteSpace(dumpResources))
+                {
+                    dump.AppendLine();
+                    dump.AppendLine("Resource dump");
+                    dump.Append(dumpResources);
+                }
+            }
+
+            return dump.ToString();
+        }
     }
 }
