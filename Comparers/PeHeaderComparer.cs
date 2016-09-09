@@ -16,41 +16,49 @@ namespace BuildValidator
                 .Pipe(new FileSink(outfile));
             await cmd1.Run();
 
-            string tmpFile = Path.GetTempFileName();
-            var cmd2 = new NullSource()
-                .Pipe(new Command(Tools.Dumpbin, "/IMPORTS", infile))
-                .Pipe(new Command(Tools.Sed, "-r", "\"" + @"s/^      *[0-9A-F]+/          /g" + "\""))
-                .Pipe(new Command(Tools.Sed, "\"" + @"/Import Address Table/d;/Import Name Table/d;/time date stamp/d;/Index of first forwarder reference/d" + "\""))
-                .Pipe(new FileSink(tmpFile));
-            await cmd2.Run();
-
-            // sort imports by module and symbol for a nice diff
-            string line;
-            string module = null;
             SortedDictionary<string, List<string>> importDict = new SortedDictionary<string, List<string>>();
-            using (StreamReader sr = new StreamReader(tmpFile))
-            {
-                while ((line = sr.ReadLine()) != null)
-                {
-                    if (line.StartsWith("  Summary"))
-                    {
-                        // summary is not interesting, bail
-                        break;
-                    }
 
-                    if (line.StartsWith("          "))
+            string tmpFile = Path.GetTempFileName();
+            try
+            {
+                var cmd2 = new NullSource()
+                    .Pipe(new Command(Tools.Dumpbin, "/IMPORTS", infile))
+                    .Pipe(new Command(Tools.Sed, "-r", "\"" + @"s/^      *[0-9A-F]+/          /g" + "\""))
+                    .Pipe(new Command(Tools.Sed, "\"" + @"/Import Address Table/d;/Import Name Table/d;/time date stamp/d;/Index of first forwarder reference/d" + "\""))
+                    .Pipe(new FileSink(tmpFile));
+                await cmd2.Run();
+
+                // sort imports by module and symbol for a nice diff
+                string line;
+                string module = null;
+                using (StreamReader sr = new StreamReader(tmpFile))
+                {
+                    while ((line = sr.ReadLine()) != null)
                     {
-                        importDict[module].Add(line.Trim());
-                    }
-                    else if (line.StartsWith("    "))
-                    {
-                        module = line.Trim().ToUpper();
-                        if (!importDict.ContainsKey(module))
+                        if (line.StartsWith("  Summary"))
                         {
-                            importDict[module] = new List<string>();
+                            // summary is not interesting, bail
+                            break;
+                        }
+
+                        if (line.StartsWith("          "))
+                        {
+                            importDict[module].Add(line.Trim());
+                        }
+                        else if (line.StartsWith("    "))
+                        {
+                            module = line.Trim().ToUpper();
+                            if (!importDict.ContainsKey(module))
+                            {
+                                importDict[module] = new List<string>();
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                File.Delete(tmpFile);
             }
 
             using (StreamWriter sw = new StreamWriter(outfile, true))

@@ -31,38 +31,52 @@ namespace BuildValidator
 
         public async override Task<string> Compare(string ofi, string nfi)
         {
-            string ofi_temp = Path.GetTempFileName();
-            string nfi_temp = Path.GetTempFileName();
-
-            await Preprocess(ofi, ofi_temp);
-            await Preprocess(nfi, nfi_temp);
-
             StringBuilder sb = new StringBuilder();
 
-            var cmd = new NullSource()
-                .Pipe(new Command(Tools.Diff, ofi_temp, nfi_temp))
-                .Pipe(new StringSink(sb));
-            await cmd.Run();
+            string ofi_temp = Path.GetTempFileName();
+            try
+            {
+                string nfi_temp = Path.GetTempFileName();
+                try
+                {
+                    await Preprocess(ofi, ofi_temp);
+                    await Preprocess(nfi, nfi_temp);
 
-            File.Delete(ofi_temp);
-            File.Delete(nfi_temp);
+                    var cmd = new NullSource()
+                        .Pipe(new Command(Tools.Diff, ofi_temp, nfi_temp))
+                        .Pipe(new StringSink(sb));
+                    await cmd.Run();
+                }
+                finally
+                {
+                    File.Delete(nfi_temp);
+                }
+            }
+            finally
+            {
+                File.Delete(ofi_temp);
+            }
 
             return sb.ToString();
         }
 
         public async override Task<string> Dump(string fi)
         {
-            string fi_temp = Path.GetTempFileName();
-
-            await Preprocess(fi, fi_temp);
-
             StringBuilder sb = new StringBuilder();
 
-            var cmd = new FileSource(fi_temp)
-                .Pipe(new StringSink(sb));
-            await cmd.Run();
+            string fi_temp = Path.GetTempFileName();
+            try
+            {
+                await Preprocess(fi, fi_temp);
 
-            File.Delete(fi_temp);
+                var cmd = new FileSource(fi_temp)
+                    .Pipe(new StringSink(sb));
+                await cmd.Run();
+            }
+            finally
+            {
+                File.Delete(fi_temp);
+            }
 
             return sb.ToString();
         }
