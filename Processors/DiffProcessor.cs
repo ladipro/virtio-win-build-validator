@@ -10,10 +10,19 @@ namespace BuildValidator
     // Diffs files in two directories, Preprocess returns files seen in the old one
     class DiffProcessor : Processor
     {
+        enum PathMatchLevel
+        {
+            None,
+            FullMatch,             // we found the corresponding file at the exact same path
+            CaseInsensitiveMatch,  // Windows thinks it's the same path but it differs in case
+            SubstitutionMatch,     // we had to use a substitution
+        }
+
         static Dictionary<string, string> substitutions = new Dictionary<string, string>()
         {
             { "Win8.1", "Win8" },
-            { "Win10", "Win8" }
+            { "Win10", "Win8" },
+            { "w8.1", "w8" }
         };
 
         private string rootOld;
@@ -21,17 +30,17 @@ namespace BuildValidator
         public DiffProcessor(string rootOld, string rootNew, List<Regex> excludedSpecs)
             : base(rootNew, excludedSpecs)
         {
-            this.rootOld = rootOld;
+            this.rootOld = Tools.GetProperDirectoryCapitalization(rootOld);
         }
 
         protected override Task GetTask(FileInfo fi, HashSet<string> filesSeen)
         {
-            bool usedSubst;
-            string ofi = FindOldFile(fi, rootOld, root, out usedSubst);
+            PathMatchLevel matchLevel;
+            string ofi = FindOldFile(fi, rootOld, root, out matchLevel);
             if (ofi != null)
             {
                 filesSeen.Add(ofi);
-                return CompareFiles(ofi, fi.FullName, usedSubst);
+                return CompareFiles(ofi, fi.FullName, matchLevel);
             }
             else
             {
@@ -40,19 +49,25 @@ namespace BuildValidator
             }
         }
 
-        static async Task<string> CompareFiles(string ofi, string nfi, bool usedSubst)
+        static async Task<string> CompareFiles(string ofi, string nfi, PathMatchLevel matchLevel)
         {
             FileComparer cmp = GetComparerForFile(ofi);
 
             string diff = await cmp.Compare(ofi, nfi);
 
-            if (!String.IsNullOrWhiteSpace(diff))
+            if (!String.IsNullOrWhiteSpace(diff) || matchLevel != PathMatchLevel.FullMatch)
             {
                 StringBuilder output = new StringBuilder();
                 output.AppendLine("Diff " + ofi + " vs " + nfi + ":");
-                if (usedSubst)
+                switch (matchLevel)
                 {
-                    output.AppendLine("(NOTE: New file has no exact counterpart in old tree, using a substitution)");
+                    case PathMatchLevel.CaseInsensitiveMatch:
+                        output.AppendLine("(NOTE: File paths differ in case)");
+                        break;
+
+                    case PathMatchLevel.SubstitutionMatch:
+                        output.AppendLine("(NOTE: New file has no exact counterpart in old tree, using a substitution)");
+                        break;
                 }
                 output.AppendLine(diff);
                 return output.ToString();
@@ -60,7 +75,7 @@ namespace BuildValidator
             return String.Empty;
         }
 
-        static string FindOldFile(FileInfo nfi, string rootOld, string rootNew, out bool usedSubst)
+        static string FindOldFile(FileInfo nfi, string rootOld, string rootNew, out PathMatchLevel matchLevel)
         {
             string nameOnly = nfi.FullName.Substring(rootNew.Length + 1);
 
@@ -68,11 +83,19 @@ namespace BuildValidator
             string ofi = Path.Combine(rootOld, nameOnly);
             if (File.Exists(ofi))
             {
-                usedSubst = false;
-                return ofi;
+                string exactName = Tools.GetProperFilePathCapitalization(ofi);
+                if (ofi == exactName)
+                {
+                    matchLevel = PathMatchLevel.FullMatch;
+                }
+                else
+                {
+                    matchLevel = PathMatchLevel.CaseInsensitiveMatch;
+                }
+                return exactName;
             }
 
-            // try a substitution if exact match failed
+            // try a substitution if exact/case-insensitive match failed
             foreach (var subst in substitutions)
             {
                 if (nameOnly.ToLower().StartsWith(subst.Key.ToLower()))
@@ -81,14 +104,14 @@ namespace BuildValidator
                     ofi = Path.Combine(rootOld, substNameOnly);
                     if (File.Exists(ofi))
                     {
-                        usedSubst = true;
+                        matchLevel = PathMatchLevel.SubstitutionMatch;
                         return ofi;
                     }
                 }
             }
 
             // give up, there's no good old file to diff this new file against
-            usedSubst = false;
+            matchLevel = PathMatchLevel.None;
             return null;
         }
     }

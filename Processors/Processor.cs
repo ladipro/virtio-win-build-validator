@@ -28,7 +28,7 @@ namespace BuildValidator
 
         public Processor(string root, List<Regex> excludedSpecs)
         {
-            this.root = root;
+            this.root = Tools.GetProperDirectoryCapitalization(root);
             this.excludedSpecs = excludedSpecs;
         }
 
