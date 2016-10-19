@@ -22,7 +22,10 @@ namespace BuildValidator
         {
             { "Win8.1", "Win8" },
             { "Win10", "Win8" },
-            { "w8.1", "w8" }
+            { "w8.1", "w8" },
+            { "Wxp", "XP" },
+            { "Wnet", "XP" },
+            { "Wlh", "Vista" },
         };
 
         private string rootOld;
