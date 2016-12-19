@@ -56,11 +56,15 @@ differences between corresponding old and new files. Note that if there
 are no significant differences between the builds, no output is produced.
 
 Extra files in the new build may be mapped to existing files in the old
-build using the 'substitution' mechanism. Two substitutions are currently
+build using the 'substitution' mechanism. Six substitutions are currently
 hard-coded in DiffProcessor.cs:
 
 Win8.1 -> Win8
 Win10 -> Win8
+w8.1 -> w8
+Wxp -> XP
+Wnet -> XP
+Wlh -> Vista
 
 This means that if a file <new_dir>\Win8.1\...\somefile is found in the new
 build and there is no <old_dir>\Win8.1\...\somefile, BuildValidator will also
