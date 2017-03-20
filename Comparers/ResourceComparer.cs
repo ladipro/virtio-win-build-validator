@@ -23,7 +23,13 @@ namespace BuildValidator
 
                 string tmpFileExe = Path.Combine(tmpPath, Path.GetFileNameWithoutExtension(infile) + ".exe");
                 string tmpFileRc = Path.ChangeExtension(tmpFileExe, "rc");
+
                 File.Copy(infile, tmpFileExe);
+                FileAttributes attributes = File.GetAttributes(tmpFileExe);
+                if (attributes.HasFlag(FileAttributes.ReadOnly))
+                {
+                    File.SetAttributes(tmpFileExe, attributes & ~FileAttributes.ReadOnly);
+                }
 
                 var cmd1 = new NullSource()
                     .Pipe(new Command(Tools.Resedit, "-convert", tmpFileExe, tmpFileRc));

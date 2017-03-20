@@ -60,7 +60,7 @@ namespace BuildValidator
 
         protected override Task<Stream> Execute()
         {
-            return Task.FromResult<Stream>(new FileStream(file, FileMode.Open));
+            return Task.FromResult<Stream>(new FileStream(file, FileMode.Open, FileAccess.Read));
         }
     }
 
