@@ -141,6 +141,8 @@ namespace BuildValidator
             using (Process p = new Process())
             {
                 p.StartInfo = startInfo;
+
+                Task processTask = p.WaitForExitAsync();
                 p.Start();
 
                 // asynchronously sink the output of the command to memory
@@ -153,7 +155,7 @@ namespace BuildValidator
                 p.StandardInput.Close();
 
                 // wrap up
-                await p.WaitForExitAsync();
+                await processTask;
                 thread.Join();
 
                 output.Seek(0, SeekOrigin.Begin);
