@@ -80,7 +80,12 @@ namespace BuildValidator
 
         static string FindOldFile(FileInfo nfi, string rootOld, string rootNew, out PathMatchLevel matchLevel)
         {
-            string nameOnly = nfi.FullName.Substring(rootNew.Length + 1);
+            int rootLength = rootNew.Length;
+            if (!rootNew.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            {
+                rootLength++;
+            }
+            string nameOnly = nfi.FullName.Substring(rootLength);
 
             // try exact match first
             string ofi = Path.Combine(rootOld, nameOnly);
