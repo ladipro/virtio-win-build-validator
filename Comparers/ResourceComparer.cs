@@ -37,7 +37,7 @@ namespace BuildValidator
 
                 // normalize versions
                 var cmd2 = new FileSource(tmpFileRc)
-                    .Pipe(new Command(Tools.Sed, @"s/\([0-9]*[,\.][0-9]*[,\.][0-9]*[,\.]\)[0-9]*/\10/"))
+                    .Pipe(new Command(Tools.Sed, Tools.Quote(@"s/\([0-9]*[,\.][0-9]*[,\.][0-9]*[,\.]\)[0-9]*/\10/")))
                     .Pipe(new FileSink(outfile));
                 await cmd2.Run();
 

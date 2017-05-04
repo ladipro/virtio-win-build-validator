@@ -29,6 +29,11 @@ namespace BuildValidator
             return false;
         }
 
+        public static string Quote(string arg)
+        {
+            return String.Format("\"{0}\"", arg);
+        }
+
         public static string GetProperDirectoryCapitalization(string dirPath)
         {
             return GetProperDirectoryCapitalization(new DirectoryInfo(dirPath));

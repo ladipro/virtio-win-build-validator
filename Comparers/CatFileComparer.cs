@@ -12,7 +12,7 @@ namespace BuildValidator
 
             var cmd = new NullSource()
                 .Pipe(new Command(Tools.Sigcheck, "-d", infile))
-                .Pipe(new Command(Tools.Sed, "-n", @"/HWID/p;/OS:/p"))
+                .Pipe(new Command(Tools.Sed, "-n", Tools.Quote(@"/HWID/p;/OS:/p")))
                 .Pipe(new FileSink(outfile));
             await cmd.Run();
         }

@@ -11,8 +11,8 @@ namespace BuildValidator
         {
             var cmd1 = new NullSource()
                 .Pipe(new Command(Tools.Dumpbin, "/HEADERS", infile))
-                .Pipe(new Command(Tools.Sed, "-n", "\"" + @"/machine/p;/characteristics/p;/subsystem/p;/size of image/p;" +
-                                                          @"s/^.*entry point (.*) \(.*\)$/entry point \1/p" + "\""))
+                .Pipe(new Command(Tools.Sed, "-n", Tools.Quote(@"/machine/p;/characteristics/p;/subsystem/p;/size of image/p;" +
+                                                               @"s/^.*entry point (.*) \(.*\)$/entry point \1/p")))
                 .Pipe(new FileSink(outfile));
             await cmd1.Run();
 
@@ -23,8 +23,8 @@ namespace BuildValidator
             {
                 var cmd2 = new NullSource()
                     .Pipe(new Command(Tools.Dumpbin, "/IMPORTS", infile))
-                    .Pipe(new Command(Tools.Sed, "-r", "\"" + @"s/^      *[0-9A-F]+/          /g" + "\""))
-                    .Pipe(new Command(Tools.Sed, "\"" + @"/Import Address Table/d;/Import Name Table/d;/time date stamp/d;/Index of first forwarder reference/d" + "\""))
+                    .Pipe(new Command(Tools.Sed, "-r", Tools.Quote(@"s/^      *[0-9A-F]+/          /g")))
+                    .Pipe(new Command(Tools.Sed, Tools.Quote(@"/Import Address Table/d;/Import Name Table/d;/time date stamp/d;/Index of first forwarder reference/d")))
                     .Pipe(new FileSink(tmpFile));
                 await cmd2.Run();
 

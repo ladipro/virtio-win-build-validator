@@ -39,9 +39,9 @@ namespace BuildValidator
 
             var cmd = new FileSource(infile)
                 // remove comments, remove trailing whitespace, remove empty lines
-                .Pipe(new Command(Tools.Sed, @"s/\(;.*\)$//;s/\(\s*\)$//;/^\s*$/d"))
+                .Pipe(new Command(Tools.Sed, Tools.Quote(@"s/;.*$//;s/\s*$//;/^\s*$/d")))
                 // normalize date/version
-                .Pipe(new Command(Tools.Sed, @"s/DriverVer=[^,]*,\([^\.]*\.[^\.]*\.[^\.]*\)\..*$/DriverVer=00\/00\/0000,\1.0/"))
+                .Pipe(new Command(Tools.Sed, Tools.Quote(@"s#DriverVer=[^,]*,\([^\.]*\.[^\.]*\.[^\.]*\)\..*$#DriverVer=00/00/0000,\1.0#")))
                 .Pipe(new FileSink(outfile, FileMode.Append));
             await cmd.Run();
         }
