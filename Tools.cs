@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Configuration;
 using System.Diagnostics;
 using System.Threading;
@@ -11,11 +12,26 @@ namespace BuildValidator
 {
     class Tools
     {
-        public static string Sed { get { return ConfigurationManager.AppSettings["SedPath"]; } }
-        public static string Diff { get { return ConfigurationManager.AppSettings["DiffPath"]; } }
-        public static string Sigcheck { get { return ConfigurationManager.AppSettings["SigcheckPath"]; } }
-        public static string Resedit { get { return ConfigurationManager.AppSettings["ReseditPath"]; } }
-        public static string Dumpbin { get { return ConfigurationManager.AppSettings["DumpbinPath"]; } }
+        public static string Sed { get { return GetAppSettingsPath("SedPath"); } }
+        public static string Diff { get { return GetAppSettingsPath("DiffPath"); } }
+        public static string Sigcheck { get { return GetAppSettingsPath("SigcheckPath"); } }
+        public static string Resedit { get { return GetAppSettingsPath("ReseditPath"); } }
+        public static string Dumpbin { get { return GetAppSettingsPath("DumpbinPath"); } }
+
+        private static string GetAppSettingsPath(string key)
+        {
+            string relPath = ConfigurationManager.AppSettings[key];
+            if (String.IsNullOrWhiteSpace(relPath))
+            {
+                return String.Empty;
+            }
+            string exeDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (String.IsNullOrWhiteSpace(exeDir))
+            {
+                return relPath;
+            }
+            return Path.Combine(exeDir, relPath);
+        }
 
         public static bool FileMatchesSpecs(List<Regex> specs, FileInfo fi)
         {
